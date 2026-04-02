@@ -1,50 +1,38 @@
-using System;
+using System.Collections;
 using UnityEngine;
 
 public class CubeSpawner : Spawner<Cube>
 {
     [SerializeField] private BombSpawner _bombSpawner;
 
-    public event Action CubeSpawned;
-    public event Action CubeCreated;
-    public event Action ActiveCubeCountUpdated;
+    private bool _isSpawning = true;
 
-    protected override Cube CreateObject()
+    private void Start()
     {
-        Cube cube = Instantiate(_prefab);
-        cube.Released += CompleteCube;
-        CubeCreated.Invoke();
+        _isSpawning = true;
+        StartCoroutine(SpawnRoutine());
+    }
+
+    protected override Cube SpawnObject()
+    {
+        Cube cube = base.SpawnObject();
+        cube.transform.position = GetRandomPosition();
         return cube;
     }
 
-    protected override void ResetObject(Cube cube)
-    {
-        ActiveObjectsOnScene.Remove(cube);
-        ActiveCubeCountUpdated.Invoke();
-        cube.ResetState();
-    }
-
-    protected override void SpawnObject()
-    {
-        Cube cube = _pool.Get();
-        ActiveObjectsOnScene.Add(cube);
-        ActiveCubeCountUpdated.Invoke();
-        CubeSpawned.Invoke();
-        cube.transform.position = GetRandomPosition();
-    }
-
-    private void CompleteCube(Cube cube)
+    protected override void ReleaseObject(Cube cube)
     {
         _bombSpawner.SpawnBombAtPosition(cube.transform.position);
 
-        _pool.Release(cube);
+        base.ReleaseObject(cube);
     }
 
-    private void OnDestroy()
+    private IEnumerator SpawnRoutine()
     {
-        foreach (var cube in ActiveObjectsOnScene)
+        while (_isSpawning)
         {
-            cube.Released -= CompleteCube;
+            SpawnObject();
+            yield return new WaitForSeconds(RepeatRate);
         }
     }
 }

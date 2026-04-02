@@ -3,14 +3,14 @@ using System.Collections;
 using UnityEngine;
 
 [RequireComponent(typeof(Renderer))]
-public class Cube : MonoBehaviour
+public class Cube : MonoBehaviour, IPoolable
 {
     private float _minReleaseDelay = 2f;
     private float _maxReleaseDelay = 5f;
     private bool _hasCollided = false;
     private ColorChanger _colorChanger;
 
-    public event Action<Cube> Released;
+    public event Action<IPoolable> ReturnToPoolRequested;
 
     private void Awake()
     {
@@ -41,6 +41,6 @@ public class Cube : MonoBehaviour
     private IEnumerator ScheduleRelease(float delay)
     {
         yield return new WaitForSeconds(delay);
-        Released?.Invoke(this);
+        ReturnToPoolRequested?.Invoke(this);
     }
 }

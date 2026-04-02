@@ -6,7 +6,7 @@ public class Exploder : MonoBehaviour
     [SerializeField] private float _explosionRadius = 5f;
     [SerializeField] private float _explosionForce = 10f;
 
-    public event Action<GameObject> Exploded;
+    public event Action Exploded;
 
     public void Explode(GameObject owner)
     {
@@ -21,6 +21,6 @@ public class Exploder : MonoBehaviour
             }
         }
 
-        Exploded?.Invoke(owner);
+        Exploded?.Invoke();
     }
 }

@@ -2,11 +2,11 @@ using UnityEngine;
 using TMPro;
 
 [System.Serializable]
-public class TrackedObjectStats<T> where T : MonoBehaviour
+public class SpawnerDisplay
 {
     [SerializeField] private TMP_Text _totalText;
-    [SerializeField] private TMP_Text _createdText;    
-    [SerializeField] private TMP_Text _activeText;     
+    [SerializeField] private TMP_Text _createdText;
+    [SerializeField] private TMP_Text _activeText;
 
     private int _totalSpawned = 0;
     private int _totalCreated = 0;
@@ -32,8 +32,8 @@ public class TrackedObjectStats<T> where T : MonoBehaviour
 
     private void UpdateDisplay()
     {
-          _totalText.text = _totalSpawned.ToString();
-          _createdText.text = _totalCreated.ToString();
-          _activeText.text = _activeObjects.ToString();
+        if (_totalText != null) _totalText.text = _totalSpawned.ToString();
+        if (_createdText != null) _createdText.text = _totalCreated.ToString();
+        if (_activeText != null) _activeText.text = _activeObjects.ToString();
     }
 }

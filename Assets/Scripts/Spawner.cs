@@ -1,39 +1,42 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Pool;
 
-public abstract class Spawner<T> : MonoBehaviour where T : MonoBehaviour
+public abstract class Spawner<T> : MonoBehaviour, ISpawner where T : MonoBehaviour, IPoolable
 {
-    [SerializeField] protected T _prefab;
-    [SerializeField] protected int _defaultCapacity = 5;
-    [SerializeField] protected int _maxPoolSize = 5;
-    [SerializeField] protected float _repeatRate = 1f;
-    [SerializeField] protected Vector3 _spawnAreaSize = new(5f, 0f, 5f);
+    [SerializeField] protected T Prefab;
+    [SerializeField] protected int DefaultCapacity = 5;
+    [SerializeField] protected int MaxPoolSize = 5;
+    [SerializeField] protected float RepeatRate = 1f;
+    [SerializeField] protected Vector3 SpawnAreaSize = new(5f, 0f, 5f);
+
+    public event Action ObjectSpawned;
+    public event Action ObjectCreated;
+    public event Action ActiveObjectCountUpdated;
 
     protected HashSet<T> ActiveObjectsOnScene = new HashSet<T>();
-
     protected ObjectPool<T> _pool;
 
     protected virtual void Awake()
     {
         _pool = new ObjectPool<T>(
             createFunc: CreateObject,
-            actionOnGet: (obj) => obj.gameObject.SetActive(true),
-            actionOnRelease: (obj) =>
-            {
-                ResetObject(obj);
-                obj.gameObject.SetActive(false);
-            },
-            actionOnDestroy: (obj) => Destroy(obj.gameObject),
+            actionOnGet: GetObject,
+            actionOnRelease: ReleaseObject,
+            actionOnDestroy: (item) => Destroy(item.gameObject),
             collectionCheck: true,
-            defaultCapacity: _defaultCapacity,
-            maxSize: _maxPoolSize
+            defaultCapacity: DefaultCapacity,
+            maxSize: MaxPoolSize
         );
     }
 
-    protected virtual void Start()
+    private void OnDisable()
     {
-        InvokeRepeating(nameof(SpawnObject), 0.0f, _repeatRate);
+        foreach (var item in ActiveObjectsOnScene)
+        {
+            UnsubscribeFromReturnEvent(item);
+        }
     }
 
     public int GetActiveElementsCount()
@@ -41,22 +44,65 @@ public abstract class Spawner<T> : MonoBehaviour where T : MonoBehaviour
         return ActiveObjectsOnScene.Count;
     }
 
-    protected abstract T CreateObject();
+    protected virtual T CreateObject()
+    {
+        T item = Instantiate(Prefab);
+        SubscribeToReturnEvent(item);
+        ObjectCreated?.Invoke();
+        return item;
+    }
 
-    protected abstract void ResetObject(T obj);
+    protected virtual void GetObject(T item)
+    {
+        item.gameObject.SetActive(true);
+    }
 
-    protected abstract void SpawnObject();
+    protected virtual void ReleaseObject(T item)
+    {
+        item.ResetState();
+        item.gameObject.SetActive(false);
+        ActiveObjectsOnScene.Remove(item);
+        ActiveObjectCountUpdated?.Invoke();
+    }
 
+    protected virtual T SpawnObject()
+    {
+        T item = _pool.Get();
+        ActiveObjectsOnScene.Add(item);
+        ActiveObjectCountUpdated?.Invoke();
+        ObjectSpawned?.Invoke();
+        return item;
+    }
     protected Vector3 GetRandomPosition()
     {
         int halfDivider = 2;
 
         Vector3 randomPosition = new(
-            Random.Range(-_spawnAreaSize.x / halfDivider, _spawnAreaSize.x / halfDivider),
-            _spawnAreaSize.y,
-            Random.Range(-_spawnAreaSize.z / halfDivider, _spawnAreaSize.z / halfDivider)
+            UnityEngine.Random.Range(-SpawnAreaSize.x / halfDivider, SpawnAreaSize.x / halfDivider),
+            SpawnAreaSize.y,
+            UnityEngine.Random.Range(-SpawnAreaSize.z / halfDivider, SpawnAreaSize.z / halfDivider)
         );
 
         return randomPosition + transform.position;
+    }
+
+    private void SubscribeToReturnEvent(T item)
+    {
+        item.ReturnToPoolRequested += HandleReturnToPool;
+    }
+
+    private void UnsubscribeFromReturnEvent(T item)
+    {
+        item.ReturnToPoolRequested -= HandleReturnToPool;
+    }
+
+    private void HandleReturnToPool(IPoolable poolable)
+    {
+        T item = poolable as T;
+
+        if (item != null)
+        {
+            _pool.Release(item);
+        }
     }
 }

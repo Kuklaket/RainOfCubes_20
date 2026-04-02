@@ -2,12 +2,12 @@ using System;
 using UnityEngine;
 
 [RequireComponent(typeof(Fader), typeof(Exploder))]
-public class Bomb : MonoBehaviour
+public class Bomb : MonoBehaviour, IPoolable
 {
     private Fader _fader;
     private Exploder _exploder;
 
-    public event Action<Bomb> ExplosionCompleted;
+    public event Action<IPoolable> ReturnToPoolRequested;
 
     private void Awake()
     {
@@ -29,18 +29,18 @@ public class Bomb : MonoBehaviour
         _exploder.Exploded -= NotifyCompletion;
     }
 
+    public void ResetState()
+    {
+        _fader.ResetFader();
+    }
+
     private void HandleFadeComplete()
     {
         _exploder.Explode(gameObject);
     }
 
-    private void NotifyCompletion(GameObject owner)
+    private void NotifyCompletion()
     {
-        ExplosionCompleted?.Invoke(this);
-    }
-
-    public void ResetState()
-    {
-        _fader.ResetFader();
+        ReturnToPoolRequested?.Invoke(this);
     }
 }

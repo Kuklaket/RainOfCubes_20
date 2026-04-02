@@ -7,9 +7,9 @@ public class Fader : MonoBehaviour
 {
     [SerializeField] private float _minFadeTime = 2f;
     [SerializeField] private float _maxFadeTime = 5f;
-
     [SerializeField][Range(0f, 1f)] private float _startAlpha = 1f;
     [SerializeField][Range(0f, 1f)] private float _endAlpha = 0f;
+
     private Renderer _renderer;
     private Material _material;
     private bool _isInitialized = false;
@@ -19,18 +19,6 @@ public class Fader : MonoBehaviour
     private void Awake()
     {
         Initialize();
-    }
-
-    private void Initialize()
-    {
-        if (_isInitialized) return;
-
-        _renderer = GetComponent<Renderer>();
-        if (_renderer != null)
-        {
-            _material = _renderer.material;
-            _isInitialized = true;
-        }
     }
 
     public void StartFade()
@@ -47,6 +35,33 @@ public class Fader : MonoBehaviour
 
         float fadeTime = UnityEngine.Random.Range(_minFadeTime, _maxFadeTime);
         StartCoroutine(Fade(fadeTime));
+    }
+
+    public void ResetFader()
+    {
+        if (!_isInitialized)
+        {
+            Initialize();
+        }
+
+        if (_material != null)
+        {
+            Color resetColor = _material.color;
+            resetColor.a = _startAlpha;
+            _material.color = resetColor;
+        }
+    }
+
+    private void Initialize()
+    {
+        if (_isInitialized) return;
+
+        _renderer = GetComponent<Renderer>();
+        if (_renderer != null)
+        {
+            _material = _renderer.material;
+            _isInitialized = true;
+        }
     }
 
     private IEnumerator Fade(float fadeTime)
@@ -76,20 +91,5 @@ public class Fader : MonoBehaviour
         _material.color = finalColor;
 
         FadeCompleted?.Invoke();
-    }
-
-    public void ResetFader()
-    {
-        if (!_isInitialized)
-        {
-            Initialize();
-        }
-
-        if (_material != null)
-        {
-            Color resetColor = _material.color;
-            resetColor.a = _startAlpha;
-            _material.color = resetColor;
-        }
     }
 }
