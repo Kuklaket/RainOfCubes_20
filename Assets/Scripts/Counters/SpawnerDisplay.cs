@@ -32,8 +32,13 @@ public class SpawnerDisplay
 
     private void UpdateDisplay()
     {
-        if (_totalText != null) _totalText.text = _totalSpawned.ToString();
-        if (_createdText != null) _createdText.text = _totalCreated.ToString();
-        if (_activeText != null) _activeText.text = _activeObjects.ToString();
+        if (_totalText != null) 
+            _totalText.text = _totalSpawned.ToString();
+
+        if (_createdText != null) 
+            _createdText.text = _totalCreated.ToString();
+
+        if (_activeText != null) 
+            _activeText.text = _activeObjects.ToString();
     }
 }
